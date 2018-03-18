@@ -89,9 +89,9 @@ Here're some examples of my output for this step:
 ### Lane Pixel Finding and Polynomial Fitting
 The code for finding the lane line pixels and polynomial fitting is in [find_lanes.py](find_lanes.py).
 
-Lane lines are fitted to new image frames by the function [`initial_fit`](find_lanes.py#L3).
+Lane lines are fitted to new image frames by the function [`initial_fit`](find_lanes.py#L86).
 It uses a [histogram](find_lanes.py#L90-96) to find the starting points for the left and right line and
-the applies the[`sliding_window_search`](find_lanes.py#L101) function, which works exactly like the function introduced 
+the applies the[`sliding_window_search`](find_lanes.py#L3) function, which works exactly like the function introduced 
 in this classroom module.
 
 The found lane pixels are the passed to a [curve fitting function ](find_lanes.py#L51) that fits 2d polynomial to
