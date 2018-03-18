@@ -1,9 +1,10 @@
-#Advanced Lane Finding Project
+# Advanced Lane Finding Project
 
 **All steps described in the sections below and it's results can also be seen in
 [jupiter notebook](./advanced_lane_finding.ipynb) of this project.**
----
 
+
+---
 ## Camera Calibration
 
 The code for the camera calibraion is in the file called [calibration.py line 8-34](./calibration.py#L8-L34).
@@ -23,6 +24,7 @@ I applied this distortion correction to the test image using the `cv2.undistort(
 
 
 ---
+
 ## Pipeline (single images)
 
 The whole code for the image processing pipeline is in [pipeline.py](./pipeline.py).
@@ -68,6 +70,8 @@ Here's an example of the perspective transformation applied to one test image:
 
 ![transform](./writeup_images/transform.png)
 
+---
+
 ### Binary Thresholding
 
 I used a combination of s-channel threshold in HLS space and l-channel threshold LUV space.
@@ -79,6 +83,8 @@ Here're some examples of my output for this step:
 
 ![threshold](./writeup_images/threshold.png)
 ![threshold2](./writeup_images/threshold2.png)
+
+---
 
 ### Lane Pixel Finding and Polynomial Fitting
 The code for finding the lane line pixels and polynomial fitting is in [find_lanes.py](find_lanes.py).
@@ -96,6 +102,7 @@ Here're some examples of output for the lane fitting  step:
 ![fit](./writeup_images/fit.png)
 ![fit2](./writeup_images/fit2.png)
 
+---
 
 ### Vehicle Offset and Lane Curvature Radius
 The code for calculating the  lateral vehicle offset to the lane center and lane curvature radius can be found
@@ -118,25 +125,25 @@ Vehicle offset and curvature radius is plotted on the resulting image [line 92-9
 Here's an example of the final result:
 ![result](./writeup_images/result.png)
 
+---
+
 ### Pipeline (video)
 
 For detecting lane lines in a video I used the image processing pipeline described in the previous section.
 To improve the performance I introduced two additional features.
 
-If a valid fitting exists for the previously processes image frame see ,([line 179-180](./pipeline.py#L79-L86))
+If a valid fitting exists for the previously processes image frame see ,([line 179-180](./find_lanes.py#L179-L180))
 the line fitting of the new frame is not done by a sliding window search. Instead the left and right lane pixels are
-searched in the near area of the existing polynomial fit. The code for this step is [here](./pipeline.py#L136).
+searched in the near area of the existing polynomial fit. The code for this step is [here](./find_lanes.py#L136).
 
 To make the lane detection more robust against outliers I decided to to average the polynomial
 parameters of the fitted lane curves over the last 12 image frames.
-The code for averaging is in [line 57-69](./pipeline.py#L57-L69) and [line 78-79](./pipeline.py#L78-L79).
+The code for averaging is in [line 57-69](./find_lanes.py#L57-L69) and [line 78-79](./find_lanes.py#L78-L79). This gave me a much "smoother" result.
 
-This gave me a much "smoother" result.
 
-The final video can be found [here](./output_videos/project_video_ouput.mp4).
+**The video that was recorded with the introduced pipeline can be found [here](./output_videos/project_video_ouput.mp4).**
 
 ---
-
 ### Discussion
 
 As shown by the video the pipeline really works well for most of the time, especially under ideal condition.

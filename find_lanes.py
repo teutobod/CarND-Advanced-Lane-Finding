@@ -190,9 +190,6 @@ class LineFitter:
             self.left_poly_param = self.left_poly_param_av.add(fit_polynom(self.left_line_pixels))
             self.right_poly_param = self.right_poly_param_av.add(fit_polynom(self.right_line_pixels))
 
-            # self.left_poly_param = fit_polynom(self.left_line_pixels)
-            # self.right_poly_param = fit_polynom(self.right_line_pixels)
-
         return self.valid_fitting_exits
 
     def get_poly_params(self):
