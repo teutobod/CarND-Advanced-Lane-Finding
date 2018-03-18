@@ -66,3 +66,18 @@ def l_channel_threshold(img, thresh=(0, 255)):
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2LUV)
     l_channel = hls[:,:,0]
     return make_binary(l_channel, thresh)
+
+def select_yellow(image):
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    lower = np.array([20,60,60])
+    upper = np.array([38,174, 250])
+    mask = cv2.inRange(hsv, lower, upper)
+
+    return mask
+
+def select_white(image):
+    lower = np.array([202,202,202])
+    upper = np.array([255,255,255])
+    mask = cv2.inRange(image, lower, upper)
+
+    return mask

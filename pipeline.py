@@ -34,10 +34,11 @@ class Pipeline:
         s_binary = s_channel_threshold(wraped_img, thresh=(150, 255))
         l_binary = l_channel_threshold(wraped_img, thresh=(210, 255))
 
+
         combined_binary = np.zeros_like(s_binary)
         combined_binary[(s_binary == 1) | (l_binary == 1)] = 1
 
-        success =  self.line_fitter.fit_lines(combined_binary)
+        success = self.line_fitter.fit_lines(combined_binary)
 
         if not success:
             return orig_img
@@ -46,36 +47,40 @@ class Pipeline:
 
         # Generate x and y pixel values
         ploty = np.linspace(0, img_size['y']-1, img_size['y'])
-        left_fitx = evaluate_2d_polynom_at(left_fit, ploty)
-        right_fitx = evaluate_2d_polynom_at(right_fit, ploty)
+        leftx = evaluate_2d_polynom_at(left_fit, ploty)
+        rightx = evaluate_2d_polynom_at(right_fit, ploty)
 
 
-        ### Calculate vehicle center offset
+        # Caculate x positions of lane lines a the image botton
+        left_x_bottom = evaluate_2d_polynom_at(left_fit, img_size['y'])
+        right_x_bottom = evaluate_2d_polynom_at(right_fit, img_size['y'])
+        x_bottom_distance = right_x_bottom - left_x_bottom
 
         # Define conversions in x and y from pixels space to meters
         ym_per_pix = 30 / img_size['y']  # meters per pixel in y dimension
-        xm_per_pix = 3.7 / 700  # meters per pixel in x dimension
+        xm_per_pix = 3.7 / x_bottom_distance  # meters per pixel in x dimension
 
-        left_fit_bottom = evaluate_2d_polynom_at(left_fit, img_size['y'])
-        right_fit_bottom = evaluate_2d_polynom_at(right_fit, img_size['y'])
-
+        # Calculate vehicle center offset
         img_center_x = img_size['x'] / 2
-        vehicles_center_offset_pixel = img_center_x - ((right_fit_bottom + left_fit_bottom) / 2)
+        vehicles_center_offset_pixel = img_center_x - ((right_x_bottom + left_x_bottom) / 2)
         vehicles_center_offset_meter = vehicles_center_offset_pixel * xm_per_pix
 
         # Calculate radius
-        left_fit, right_fit = self.line_fitter.get_poly_params(x=xm_per_pix, y=ym_per_pix)
+        # Fit new polynomials to x,y in world space
+        left_fit_cr = np.polyfit(ploty * ym_per_pix, leftx * xm_per_pix, 2)
+        right_fit_cr = np.polyfit(ploty * ym_per_pix, rightx * xm_per_pix, 2)
 
-        y_eval = np.max(ploty)
-        left_curverad = curve_radius(left_fit, y_eval)
-        right_curverad = curve_radius(right_fit, y_eval)
+        # Calculate the new radii of curvature
+        y_eval = np.max(ploty) * ym_per_pix
+        left_curverad = curve_radius(left_fit_cr, y_eval)
+        right_curverad = curve_radius(right_fit_cr, y_eval)
         curverad = (left_curverad + right_curverad) / 2
 
         # Draw lines on the image
         warped_zero = np.zeros_like(combined_binary).astype(np.uint8)
         color_warped = np.dstack((warped_zero, warped_zero, warped_zero))
-        pts_left = np.array([np.flipud(np.transpose(np.vstack([left_fitx, ploty])))])
-        pts_right = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+        pts_left = np.array([np.flipud(np.transpose(np.vstack([leftx, ploty])))])
+        pts_right = np.array([np.transpose(np.vstack([rightx, ploty]))])
         pts = np.hstack((pts_left, pts_right))
         cv2.polylines(color_warped, np.int_([pts]), isClosed=False, color=(255, 0, 0), thickness = 40)
         cv2.fillPoly(color_warped, np.int_([pts]), (0, 255, 0))
@@ -100,8 +105,8 @@ class Pipeline:
 
             axis2.set_title('Line detection')
             axis2.imshow(wraped_img, cmap='gray')
-            axis2.plot(left_fitx, ploty, color='red', linewidth=3)
-            axis2.plot(right_fitx, ploty, color='red', linewidth=3)
+            axis2.plot(leftx, ploty, color='red', linewidth=3)
+            axis2.plot(rightx, ploty, color='red', linewidth=3)
 
             axis3.set_title('Result')
             axis3.imshow(result)

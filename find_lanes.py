@@ -13,7 +13,7 @@ def sliding_window_search(nonzero_pixels, img_height, start_pos_x):
     # Set the width of the windows +/- margin
     margin = 100
     # Set minimum number of pixels found to recenter window
-    minpix = 30
+    minpix = 50
 
     # Create empty lists to receive line pixel indices
     lane_inds = []
@@ -48,17 +48,35 @@ def sliding_window_search(nonzero_pixels, img_height, start_pos_x):
     y = nonzeroy[lane_inds]
     return [x, y]
 
-def fit_polynom(pixels, deg=2):
+def fit_polynom(pixels: object, deg: object = 2) -> object:
 
     assert(len(pixels[0]) > 0)
     assert (len(pixels[1]) > 0)
     return np.polyfit(pixels[1], pixels[0], deg)
 
+class MovingAverage:
+    def __init__(self, n_window):
+        self.n_window = n_window
+        self.list = []
+
+    def add(self, x):
+
+        if(len(self.list) >= self.n_window):
+            self.list.pop(0)
+
+        self.list.append(x)
+
+        return np.average(np.array(self.list), axis=0)
+
 class LineFitter:
 
     def __init__(self):
+
         self.left_poly_param = None
         self.right_poly_param = None
+
+        self.left_poly_param_av = MovingAverage(12)
+        self.right_poly_param_av = MovingAverage(12)
 
         self.left_line_pixels = None
         self.right_line_pixels = None
@@ -86,6 +104,7 @@ class LineFitter:
         assert (len(left_pixels[0]) == len(left_pixels[1]))
         assert (len(right_pixels[0]) == len(right_pixels[1]))
 
+
         if len(left_pixels[0]) > 0 and len(right_pixels[0]) > 0:
             self.valid_fitting_exits = True
             self.left_line_pixels = left_pixels
@@ -99,6 +118,21 @@ class LineFitter:
         else:
             self.__init__()
 
+    def find_pixels_arround_line(self, binary_img, poly_param):
+        nonzero = binary_img.nonzero()
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+
+        margin = 100
+        line_fit = poly_param
+        line_inds = ((nonzerox > (line_fit[0] * (nonzeroy ** 2) + line_fit[1] * nonzeroy +
+                                  line_fit[2] - margin)) & (nonzerox < (line_fit[0] * (nonzeroy ** 2) +
+                                                                        line_fit[1] * nonzeroy + line_fit[
+                                                                                 2] + margin)))
+        line_pixels = [nonzerox[line_inds], nonzeroy[line_inds]]
+
+        return line_pixels
+
     def easy_fit(self, binary_img):
         nonzero = binary_img.nonzero()
         nonzeroy = np.array(nonzero[0])
@@ -107,6 +141,9 @@ class LineFitter:
         margin = 100
         left_fit = self.left_poly_param
         right_fit = self.right_poly_param
+
+        assert(left_fit is not None)
+        assert(right_fit is not None)
 
         left_lane_inds = ((nonzerox > (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy +
                                        left_fit[2] - margin)) & (nonzerox < (left_fit[0] * (nonzeroy ** 2) +
@@ -137,7 +174,6 @@ class LineFitter:
         else:
             self.__init__()
 
-
     def fit_lines(self, binary_img):
 
         if self.valid_fitting_exits:
@@ -151,18 +187,13 @@ class LineFitter:
             assert (self.left_line_pixels is not None), "Left list is empty."
             assert (self.right_line_pixels is not None), "Right list is empty."
 
-            self.left_poly_param = fit_polynom(self.left_line_pixels)
-            self.right_poly_param = fit_polynom(self.right_line_pixels)
+            self.left_poly_param = self.left_poly_param_av.add(fit_polynom(self.left_line_pixels))
+            self.right_poly_param = self.right_poly_param_av.add(fit_polynom(self.right_line_pixels))
+
+            # self.left_poly_param = fit_polynom(self.left_line_pixels)
+            # self.right_poly_param = fit_polynom(self.right_line_pixels)
+
         return self.valid_fitting_exits
 
-    def get_poly_params(self, x=1.0, y=1.0):
-        if self.valid_fitting_exits:
-            lx = x * self.left_line_pixels[0]
-            ly = y * self.left_line_pixels[1]
-
-            rx = x * self.right_line_pixels[0]
-            ry = y * self.right_line_pixels[1]
-
-            return fit_polynom([lx,ly]), fit_polynom([rx,ry])
-        else:
-            return None
+    def get_poly_params(self):
+        return self.left_poly_param, self.right_poly_param
